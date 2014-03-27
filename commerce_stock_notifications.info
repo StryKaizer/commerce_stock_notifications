@@ -1,0 +1,12 @@
+name = Commerce Stock Notifications
+description = Allows users to submit a request to be notified when a product comes back in stock.
+core = 7.x
+package = "Commerce (Contrib)"
+version = 7.x-1.x
+
+dependencies[] = commerce
+dependencies[] = commerce_stock
+
+files[] = commerce_stock_notifications.module
+files[] = commerce_stock_notifications.install
+files[] = commerce_stock_notifications.rules_defaults.inc

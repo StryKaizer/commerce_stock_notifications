@@ -1,0 +1,52 @@
+<?php
+
+/*
+ * Implement hook_schema.
+ */
+function commerce_stock_notifications_schema(){
+
+  $schema['commerce_stock_notifications'] = array(
+    'description' => 'The base table for commerce stock notifications.',
+      'fields' => array(
+        'nid' => array(
+          'description' => 'Unique identifier for notification request.',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'product_id' => array(
+          'description' => 'Product ID on notification request.',
+          'type'  => 'int',
+          'length'  => 20,
+        ),
+        'email' => array(
+          'description' => 'Email address to notify.',
+          'type' => 'varchar',
+          'length' => 60,
+          'not null' => TRUE,
+          'default' => '0',
+        ),
+        'context' => array(
+          'description' => 'Context request was added from.',
+          'type' => 'varchar',
+          'length' => 60,
+          'not null' => TRUE,
+        ),
+        'submit_time' => array(
+          'description' => 'Time the notification request was submitted.',
+          'type' => 'int',
+          'length' => 11,
+          'not null' => TRUE,
+        ),
+        'sent_time' => array(
+          'description' => 'Time the notification was sent.',
+          'type' => 'int',
+          'length' => 11,
+        ),
+
+     ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}

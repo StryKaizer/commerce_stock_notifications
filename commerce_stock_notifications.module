@@ -1,0 +1,297 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_stock_notifications_menu() {
+  $items = array();
+  $items['admin/commerce/config/stock-notifications'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_stock_notifications_admin_form'),
+    'access arguments' => array('administer commerce_stock settings'),
+    'title' => 'Commerce Stock Notify Config',
+  );
+
+  return $items;
+}
+
+
+function commerce_stock_notifications_admin_form($form, &$form_state) {
+
+  $config = variable_get('commerce_stock_notifications', array());
+
+  $form['oos_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Out Of Stock Message'),
+    '#description' => t('Message users will see when a product is out of stock.'),
+    '#required' => TRUE,
+    '#default_value' => isset($config['oos_message']) ? $config['oos_message'] : 'Please notify me when this product is back in stock.',
+  );
+  $form['success_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Success Message'),
+    '#description' => t('Message a user will see when they successfully submit an email address for notification.'),
+    '#required' => TRUE,
+    '#default_value' => isset($config['success_message']) ? $config['success_message'] : 'You will be notified when this product is back in stock.',
+  );
+  $form['duplicate_message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Duplicate Message'),
+    '#description' => t('Message a user will see if they submit an email address that has already been submitted for this product.'),
+    '#required' => TRUE,
+    '#default_value' => isset($config['duplicate_message']) ? $config['duplicate_message'] : 'A request for notification has already been made for this product with this email address.',
+  );
+  $form['purge_interval'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Purge Interval'),
+    '#description' => t('Sent notifications will be kept in the commerce_stock_notifications table for X days.'),
+    '#required' => TRUE,
+    '#size' => 3,
+    '#default_value' => isset($config['purge_interval']) ? $config['purge_interval'] : 30,
+    '#element_validate' => array('element_validate_integer_positive'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+  return $form;
+}
+
+function commerce_stock_notifications_admin_form_submit(&$form, &$form_state) {
+  $config = variable_get('commerce_stock_notifications', array());
+  $config['oos_message'] = $form_state['values']['oos_message'];
+  $config['success_message'] = $form_state['values']['success_message'];
+  $config['duplicate_message'] = $form_state['values']['duplicate_message'];
+  $config['purge_interval'] = $form_state['values']['purge_interval'];
+
+  variable_set('commerce_stock_notifications', $config);
+}
+
+/*
+ * Implements hook_form_form_id_alter().
+ */
+function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(&$form, &$form_state, $form_id) {
+  $product_id = $form_state['default_product']->product_id;
+  $product_wrapper = entity_metadata_wrapper('commerce_product', commerce_product_load($product_id));
+
+  if ($product_wrapper->commerce_stock->value() == '0.00') {
+    $context = $form_state['line_item']->data['context']['display_path'];
+    $config = variable_get('commerce_stock_notifications', array());
+    $oos_message = isset($config['oos_message']) ? $config['oos_message'] : 'Please notify me when this product is back in stock.';
+
+    unset($form['#submit']);
+    unset($form['#validate']);
+    global $user;
+
+    if ($user->uid) {
+      $email = $user->mail;
+    }
+    else {
+      $email = "";
+    }
+
+    $form['commerce_stock_notifications'] = array(
+      '#type' => 'fieldset',
+      '#attributes' => array(
+        'class' => array('commerce_stock_notifications_fieldset'),
+      ),
+      '#weight' => 100,
+    );
+
+    $form['commerce_stock_notifications']['markup'] = array(
+      '#markup' => '<p>' . t($oos_message) . '</p>',
+    );
+    $form['commerce_stock_notifications']['notify_product_id'] = array(
+      '#type' => 'hidden',
+      '#value' => $product_id,
+    );
+    $form['commerce_stock_notifications']['context'] = array(
+      '#type' => 'hidden',
+      '#value' => $context,
+    );
+    $form['commerce_stock_notifications']['notify_email'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Email: ',
+      '#required' => TRUE,
+      '#default_value' => $email,
+      '#size' => 30,
+      '#element_validate' => array('commerce_stock_notifications_email_element_validate'),
+    );
+    $form['commerce_stock_notifications']['notify_submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Notify me'),
+      '#submit' => array('commerce_stock_notifications_form_submit'),
+    );
+  }
+}
+
+/*
+ * Implement hook_form_submit().
+ */
+function commerce_stock_notifications_form_submit($form, $form_state) {
+  $product_id = $form_state['values']['notify_product_id'];
+  $email_id = $form_state['values']['notify_email'];
+  $context = $form_state['values']['context'];
+  $config = variable_get('commerce_stock_notifications', array());
+  $success_message = isset($config['success_message']) ? $config['success_message'] : 'You will be notified when this product is back in stock.';
+  $duplicate_message = isset($config['duplicate_message']) ? $config['duplicate_message'] : 'A request for notification has already been made for this product with this email address.';
+
+
+  //Call a function to check submitted email ID with existed.
+  $result = _commerce_stock_notifications_email_verify($product_id, $email_id);
+
+  //If there is no value, submit into DB.
+  if (!$result) {
+    $commerce_stock_notifications_inserted = db_insert('commerce_stock_notifications')
+      ->fields(array(
+        'product_id' => $product_id,
+        'email' => $email_id,
+        'submit_time' => REQUEST_TIME,
+        'context' => $context,
+      ))
+      ->execute();
+    drupal_set_message(t($success_message));
+  }
+  else {
+    drupal_set_message(t($duplicate_message));
+  }
+}
+
+/*
+ * Function to check if email address has already been submitted for this
+ * product ID.
+ */
+function _commerce_stock_notifications_email_verify($product_id, $email) {
+
+  $notify_record = db_select('commerce_stock_notifications', 'csn')
+    ->fields('csn', array())
+    ->condition('product_id', $product_id, '=')
+    ->condition('email', $email, '=')
+    ->isNull('sent_time')
+    ->execute();
+
+  $no_of_records = $notify_record->rowCount();
+
+  if ($no_of_records >= 1) {
+    $return_value = TRUE;
+  }
+  else {
+    $return_value = FALSE;
+  }
+
+  return $return_value;
+}
+
+/*
+ * Function to check email validity.
+ */
+function commerce_stock_notifications_email_element_validate($element, &$form_state, $form) {
+  if (!valid_email_address($element['#value'])) {
+    form_error($element, t('Please enter a valid email address.'));
+  }
+}
+
+/*
+ * Implement hook_cron().
+ */
+function commerce_stock_notifications_cron() {
+
+  $queue = DrupalQueue::get('commerce_stock_notifications_cleanup');
+  if ($queue->numberOfItems() == 0) {
+    $config = variable_get('commerce_stock_notifications', array());
+    $purge_interval = isset($config['purge_interval']) ? $config['purge_interval'] : 30;
+    $purge_time = strtotime('now -' . $purge_interval . 'days');
+
+    $query = db_select('commerce_stock_notifications', 'csn')
+      ->fields('csn', array('sent_time', 'nid'))
+      ->isNotNull('csn.sent_time')
+      ->condition('csn.sent_time', $purge_time, '<');
+    $result = $query->execute();
+    foreach ($result as $record) {
+      $queue->createItem($record);
+    }
+  }
+
+  variable_set('queue_default_class', 'MemoryQueue');
+  $queue = DrupalQueue::get('commerce_stock_notifications');
+  if ($queue->numberOfItems() == 0) {
+    $query = db_select('commerce_stock_notifications', 'csn');
+    $query->join('field_data_commerce_stock', 'fdcs', 'csn.product_id = fdcs.entity_id');
+    $query->fields('csn', array(
+      'email',
+      'product_id',
+      'nid',
+      'sent_time',
+      'context'
+    ))
+      ->isNull('csn.sent_time')
+      ->condition('fdcs.commerce_stock_value', 0, '>')
+      ->orderBy('submit_time', 'ASC')
+      ->range(0, 500);
+
+    $result = $query->execute();
+    foreach ($result as $record) {
+      $queue->createItem($record);
+    }
+  }
+  variable_del('queue_default_class');
+}
+
+/*
+ * Implement hook_module_implements_alter().
+ */
+function commerce_stock_notifications_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_alter' && isset($implementations['commerce_stock_notifications'])) {
+    $group = $implementations['commerce_stock_notifications'];
+    unset($implementations['commerce_stock_notifications']);
+    $implementations['commerce_stock_notifications'] = $group;
+  }
+}
+
+/*
+ * Implements hook_cron_queue_info().
+ */
+function commerce_stock_notifications_cron_queue_info() {
+  $queues['commerce_stock_notifications'] = array(
+    'worker callback' => 'commerce_stock_notifications_sender',
+    'time' => 120,
+  );
+  $queues['commerce_stock_notifications_cleanup'] = array(
+    'worker callback' => 'commerce_stock_notifications_purge',
+    'time' => 120,
+  );
+  return $queues;
+}
+
+/*
+ * Worker function for cron queue to send notifications.
+ */
+function commerce_stock_notifications_sender($data) {
+  $result = db_select('commerce_stock_notifications', 'csn')
+    ->fields('csn', array('nid', 'sent_time'))
+    ->condition('nid', $data->nid, '=')
+    ->isNull('sent_time')
+    ->execute();
+  $num_of_results = $result->rowCount();
+
+  if ($num_of_results != 0) {
+    $full_path = url($data->context, array('absolute' => TRUE));
+    $product = commerce_product_load($data->product_id);
+    rules_invoke_component('rules_send_commerce_stock_notifications', $product, $data->email, $full_path);
+
+    $result = db_update('commerce_stock_notifications')
+      ->fields(array('sent_time' => REQUEST_TIME))
+      ->condition('nid', $data->nid)
+      ->execute();
+  }
+}
+
+/*
+ * Worker function for cron queue to purge sent notifications.
+ */
+function commerce_stock_notifications_purge($data) {
+  $num_deleted = db_delete('commerce_stock_notifications')
+    ->condition('nid', $data->nid)
+    ->execute();
+}
