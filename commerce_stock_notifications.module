@@ -204,7 +204,7 @@ function commerce_stock_notifications_cron() {
     $purge_time = strtotime('now -' . $purge_interval . 'days');
 
     $query = db_select('commerce_stock_notifications', 'csn')
-      ->fields('csn', array('sent_time', 'nid'))
+      ->fields('csn', array('sent_time', 'notification_id'))
       ->isNotNull('csn.sent_time')
       ->condition('csn.sent_time', $purge_time, '<');
     $result = $query->execute();
@@ -213,7 +213,6 @@ function commerce_stock_notifications_cron() {
     }
   }
 
-  variable_set('queue_default_class', 'MemoryQueue');
   $queue = DrupalQueue::get('commerce_stock_notifications');
   if ($queue->numberOfItems() == 0) {
     $query = db_select('commerce_stock_notifications', 'csn');
@@ -221,7 +220,7 @@ function commerce_stock_notifications_cron() {
     $query->fields('csn', array(
       'email',
       'product_id',
-      'nid',
+      'notification_id',
       'sent_time',
       'context'
     ))
@@ -235,7 +234,6 @@ function commerce_stock_notifications_cron() {
       $queue->createItem($record);
     }
   }
-  variable_del('queue_default_class');
 }
 
 /*
@@ -269,8 +267,8 @@ function commerce_stock_notifications_cron_queue_info() {
  */
 function commerce_stock_notifications_sender($data) {
   $result = db_select('commerce_stock_notifications', 'csn')
-    ->fields('csn', array('nid', 'sent_time'))
-    ->condition('nid', $data->nid, '=')
+    ->fields('csn', array('notification_id', 'sent_time'))
+    ->condition('notification_id', $data->notification_id, '=')
     ->isNull('sent_time')
     ->execute();
   $num_of_results = $result->rowCount();
@@ -282,7 +280,7 @@ function commerce_stock_notifications_sender($data) {
 
     $result = db_update('commerce_stock_notifications')
       ->fields(array('sent_time' => REQUEST_TIME))
-      ->condition('nid', $data->nid)
+      ->condition('notification_id', $data->notification_id)
       ->execute();
   }
 }
@@ -292,6 +290,6 @@ function commerce_stock_notifications_sender($data) {
  */
 function commerce_stock_notifications_purge($data) {
   $num_deleted = db_delete('commerce_stock_notifications')
-    ->condition('nid', $data->nid)
+    ->condition('notification_id', $data->notification_id)
     ->execute();
 }

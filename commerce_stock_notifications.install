@@ -1,6 +1,13 @@
 <?php
 
 /*
+ * Implement hook_install.
+ */
+function commerce_stock_notifications_install() {
+  variable_set('queue_class_commerce_stock_notifications', 'MemoryQueue');
+}
+
+/*
  * Implement hook_schema.
  */
 function commerce_stock_notifications_schema(){
@@ -8,7 +15,7 @@ function commerce_stock_notifications_schema(){
   $schema['commerce_stock_notifications'] = array(
     'description' => 'The base table for commerce stock notifications.',
       'fields' => array(
-        'nid' => array(
+        'notification_id' => array(
           'description' => 'Unique identifier for notification request.',
           'type' => 'serial',
           'unsigned' => TRUE,
@@ -43,9 +50,12 @@ function commerce_stock_notifications_schema(){
           'type' => 'int',
           'length' => 11,
         ),
-
      ),
-    'primary key' => array('nid'),
+    'indexes' => array(
+      'email' => array('email'),
+      'sent_time' => array('sent_time'),
+    ),
+    'primary key' => array('notification_id'),
   );
 
   return $schema;
