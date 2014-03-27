@@ -266,22 +266,31 @@ function commerce_stock_notifications_cron_queue_info() {
  * Worker function for cron queue to send notifications.
  */
 function commerce_stock_notifications_sender($data) {
-  $result = db_select('commerce_stock_notifications', 'csn')
-    ->fields('csn', array('notification_id', 'sent_time'))
-    ->condition('notification_id', $data->notification_id, '=')
-    ->isNull('sent_time')
-    ->execute();
-  $num_of_results = $result->rowCount();
+  $transaction = db_transaction();
+
+  try {
+    $result = db_select('commerce_stock_notifications', 'csn')
+      ->fields('csn', array('notification_id', 'sent_time'))
+      ->condition('notification_id', $data->notification_id, '=')
+      ->isNull('sent_time')
+      ->forUpdate()
+      ->execute();
+    $num_of_results = $result->rowCount();
+
+    db_update('commerce_stock_notifications')
+      ->fields(array('sent_time' => REQUEST_TIME))
+      ->condition('notification_id', $data->notification_id)
+      ->execute();
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    return;
+  }
 
   if ($num_of_results != 0) {
     $full_path = url($data->context, array('absolute' => TRUE));
     $product = commerce_product_load($data->product_id);
     rules_invoke_component('rules_send_commerce_stock_notifications', $product, $data->email, $full_path);
-
-    $result = db_update('commerce_stock_notifications')
-      ->fields(array('sent_time' => REQUEST_TIME))
-      ->condition('notification_id', $data->notification_id)
-      ->execute();
   }
 }
 
