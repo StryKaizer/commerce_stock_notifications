@@ -131,7 +131,7 @@ function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(
  */
 function commerce_stock_notifications_form_submit($form, $form_state) {
   $product_id = $form_state['values']['notify_product_id'];
-  $email_id = $form_state['values']['notify_email'];
+  $email = $form_state['values']['notify_email'];
   $context = $form_state['values']['context'];
   $config = variable_get('commerce_stock_notifications', array());
   $success_message = isset($config['success_message']) ? $config['success_message'] : 'You will be notified when this product is back in stock.';
@@ -139,18 +139,17 @@ function commerce_stock_notifications_form_submit($form, $form_state) {
 
 
   //Call a function to check submitted email ID with existed.
-  $result = _commerce_stock_notifications_email_verify($product_id, $email_id);
+  $result = _commerce_stock_notifications_email_verify($product_id, $email);
 
   //If there is no value, submit into DB.
   if (!$result) {
-    $commerce_stock_notifications_inserted = db_insert('commerce_stock_notifications')
-      ->fields(array(
-        'product_id' => $product_id,
-        'email' => $email_id,
-        'submit_time' => REQUEST_TIME,
-        'context' => $context,
-      ))
-      ->execute();
+    $record = array (
+      'product_id' => $product_id,
+      'email' => $email,
+      'submit_time' => REQUEST_TIME,
+      'context' => $context,
+    );
+    drupal_write_record ('commerce_stock_notifications', $record);
     drupal_set_message(t($success_message));
   }
   else {
