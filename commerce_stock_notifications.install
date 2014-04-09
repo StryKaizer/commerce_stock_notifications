@@ -12,6 +12,14 @@ function commerce_stock_notifications_install() {
 }
 
 /*
+ * Implement hook_uninstall.
+ */
+function commerce_stock_notifications_uninstall() {
+  variable_del('queue_class_commerce_stock_notifications');
+  variable_del('commerce_stock_notifications');
+}
+
+/*
  * Implement hook_schema.
  */
 function commerce_stock_notifications_schema(){
@@ -28,12 +36,12 @@ function commerce_stock_notifications_schema(){
         'product_id' => array(
           'description' => 'Product ID on notification request.',
           'type'  => 'int',
-          'length'  => 20,
+          'length' => 10,
         ),
         'email' => array(
           'description' => 'Email address to notify.',
           'type' => 'varchar',
-          'length' => 60,
+          'length' => 254,
           'not null' => TRUE,
           'default' => '0',
         ),
@@ -57,6 +65,7 @@ function commerce_stock_notifications_schema(){
      ),
     'indexes' => array(
       'email' => array('email'),
+      'product_id' => array('product_id'),
       'sent_time' => array('sent_time'),
     ),
     'primary key' => array('notification_id'),
