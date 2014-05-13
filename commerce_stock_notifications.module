@@ -86,7 +86,7 @@ function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(
 
   // Adds the subscribing form under at the bottom of the cart form in order to
   // let the user register to be notified.
-  if ($product_wrapper->commerce_stock->value() == '0.00') {
+  if (isset($product_wrapper->commerce_stock) && $product_wrapper->commerce_stock->value() == '0.00') {
     $form['commerce_stock_notifications'] = drupal_get_form('commerce_stock_notifications_customer_form', $product_id, $form_state['line_item']->data['context']['display_path']);
     $form['commerce_stock_notifications']['#weight'] = 100;
   }
