@@ -31,5 +31,34 @@ function commerce_stock_notifications_default_rules_configuration() {
   }
   }');
 
+  $rules['rules_commerce_stock_notifications_send_notifications_on_product'] = entity_import('rules_config', '{ "rules_commerce_stock_notifications_send_notifications_on_product" : {
+    "LABEL" : "Commerce Stock Notifications: Send notifications on product update",
+    "PLUGIN" : "reaction rule",
+    "OWNER" : "rules",
+    "REQUIRES" : [ "rules", "commerce_stock_notifications", "entity" ],
+    "ON" : { "commerce_product_update" : [] },
+    "IF" : [
+      { "entity_has_field" : { "entity" : [ "commerce-product" ], "field" : "commerce_stock_override" } },
+      { "data_is" : { "data" : [ "commerce-product:commerce-stock-override" ], "value" : 1 } },
+      { "OR" : [
+          { "NOT entity_has_field" : {
+              "entity" : [ "commerce-product-unchanged" ],
+              "field" : "commerce_stock_override"
+            }
+          },
+          { "data_is" : {
+              "data" : [ "commerce-product-unchanged:commerce-stock-override" ],
+              "value" : 0
+            }
+          }
+        ]
+      }
+    ],
+    "DO" : [
+      { "notify_on_override_change" : { "commerce_product" : [ "commerce-product" ] } }
+    ]
+  }
+}');
+
   return $rules;
 }

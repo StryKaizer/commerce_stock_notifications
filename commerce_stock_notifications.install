@@ -62,14 +62,34 @@ function commerce_stock_notifications_schema(){
           'type' => 'int',
           'length' => 11,
         ),
+        'force_send' => array(
+          'description' => 'Force notification send.',
+          'type' => 'int',
+          'size' => 'tiny',
+          'default' => 0,
+        ),
      ),
     'indexes' => array(
       'email' => array('email'),
       'product_id' => array('product_id'),
       'sent_time' => array('sent_time'),
+      'force_send' => array('force_send'),
     ),
     'primary key' => array('notification_id'),
   );
 
   return $schema;
+}
+
+/**
+ * Add force_send field to commerce_stock_notifications table.
+ */
+function commerce_stock_notifications_update_7100() {
+  $spec = array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'description' => "Force notification send.",
+    'default' => 0,
+  );
+  db_add_field( 'commerce_stock_notifications', 'force_send', $spec);
 }

@@ -6,4 +6,6 @@ version = 7.x-1.x
 configure = admin/commerce/config/stock/stock-notifications
 
 dependencies[] = commerce
+dependencies[] = commerce_ss
 dependencies[] = commerce_stock
+dependencies[] = rules
