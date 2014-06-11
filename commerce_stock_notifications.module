@@ -91,8 +91,10 @@ function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(
   // Adds the subscribing form under at the bottom of the cart form in order to
   // let the user register to be notified.
   if ($stock_managed && $product_wrapper->commerce_stock->value() <= '0.00') {
-    $form['commerce_stock_notifications'] = drupal_get_form('commerce_stock_notifications_customer_form', $product_wrapper->product_id->value(), $form_state['line_item']->data['context']['display_path']);
+    $form['commerce_stock_notifications'] = commerce_stock_notifications_customer_form($form_state, $form_state['line_item']->data['context']['display_path']);
     $form['commerce_stock_notifications']['#weight'] = 100;
+    $form['#validate'] = array();
+    $form['#submit'] = array('commerce_stock_notifications_customer_form_submit');
   }
 }
 
@@ -100,11 +102,11 @@ function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(
  * Custom form to let customers register their email address to be notified
  * when product is back in stock.
  */
-function commerce_stock_notifications_customer_form($form, &$form_state, $product_id, $context = NULL) {
+function commerce_stock_notifications_customer_form(&$form_state, $context = NULL) {
   global $user;
   $config = variable_get('commerce_stock_notifications', commerce_stock_notification_default_settings());
-  $form_state['config'] = $config;
-  $form_state['context'] = $context;
+  $form_state['notify']['config'] = $config;
+  $form_state['notify']['context'] = $context;
 
   $form['commerce_stock_notifications'] = array(
     '#type' => 'fieldset',
@@ -135,8 +137,9 @@ function commerce_stock_notifications_customer_form($form, &$form_state, $produc
  * Implement hook_form_submit().
  */
 function commerce_stock_notifications_customer_form_submit($form, $form_state) {
-  $config = $form_state['config'];
-  $context = $form_state['context'];
+  $notify = $form_state['notify'];
+  $config = $notify['config'];
+  $context = $notify['context'];
   $product_id = $form_state['input']['product_id'];
   $email = $form_state['values']['notify_email'];
 
