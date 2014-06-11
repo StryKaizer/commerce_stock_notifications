@@ -22,7 +22,7 @@ function commerce_stock_notifications_default_rules_configuration() {
         "mail" : {
         "to" : ["commerce-stock-notifications-email"],
           "subject" : "The product you were waiting for on [site:url-brief] is now back in stock!",
-          "message" : "You asked to be notified when \u003Ca href=\u0022[commerce-stock-notifications-path:value]\u0022\u003E[commerce-stock-notifications-product:title-field]\u003C\/a\u003E was back in stock.",
+          "message" : "You asked to be notified when \u003Ca href=\u0022[commerce-stock-notifications-path:value]\u0022\u003E[commerce-stock-notifications-product:title]\u003C\/a\u003E was back in stock.",
           "from" : ["site:mail"],
           "language" : [""]
         }
