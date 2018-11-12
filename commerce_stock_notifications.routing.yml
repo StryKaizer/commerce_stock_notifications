@@ -1,0 +1,23 @@
+entity.commerce_stock_notification.collection:
+  path: '/admin/commerce/config/stock/notifications'
+  defaults:
+    _title: 'Stock notifications'
+    _entity_list: 'commerce_stock_notification'
+  requirements:
+    _permission: 'administer commerce stock notifications'
+
+entity.commerce_stock_notification.edit_form:
+  path: '/admin/commerce/config/stock/notifications/{commerce_stock_notification}/edit'
+  defaults:
+    _entity_form: commerce_stock_notification.edit
+    _title: 'Edit stock notification'
+  requirements:
+    _entity_access: 'commerce_stock_notification.edit'
+
+entity.commerce_stock_notification.delete_form:
+  path: '/admin/commerce/config/stock/notifications/{commerce_stock_notification}/delete'
+  defaults:
+    _entity_form: commerce_stock_notification.delete
+    _title: 'Delete stock notification'
+  requirements:
+    _entity_access: 'commerce_stock_notification.delete'

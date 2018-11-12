@@ -1,0 +1,7 @@
+name: 'Commerce stock notifications'
+type: module
+description: 'Allows users to submit a request to be notified when a product comes back in stock.'
+core: 8.x
+package: 'Commerce (contrib)'
+dependencies:
+  - commerce_stock

@@ -1,0 +1,14 @@
+{
+  "name": "drupal/commerce_stock_notifications",
+  "type": "drupal-module",
+  "description": "Allows users to submit a request to be notified when a product comes back in stock.",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/commerce_stock_notifications",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/commerce_stock_notifications",
+    "source": "http://cgit.drupalcode.org/commerce_stock_notifications"
+  },
+  "require": { }
+}
