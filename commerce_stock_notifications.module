@@ -105,6 +105,9 @@ function commerce_stock_notifications_cron() {
   foreach ($awaiting_notifications as $awaiting_notification) {
 
     $commerce_product_variation = ProductVariation::load($awaiting_notification->product_id->value);
+    if(!$commerce_product_variation){
+      continue;  // TODO: we probably should delete the notification ids instead of skipping when they do not exist anymore.
+    }
     $drupal_stock = $stock_service_manager->getStockLevel($commerce_product_variation);
 
     if ($drupal_stock > 0) {
