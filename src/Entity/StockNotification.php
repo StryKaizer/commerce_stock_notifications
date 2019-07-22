@@ -131,11 +131,11 @@ class StockNotification extends ContentEntityBase implements StockNotificationIn
       ->setDisplayConfigurable('view', TRUE)
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['product_id'] = BaseFieldDefinition::create('string')
+    $fields['id'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Index ID'))
       ->setSetting('max_length', 50);
 
-    $fields['uid'] = BaseFieldDefinition::create('entity_reference')
+    $fields['product_id'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Product variation'))
       ->setDescription(t('The product variation which triggers the notification.'))
       ->setSetting('target_type', 'commerce_product_variation')
