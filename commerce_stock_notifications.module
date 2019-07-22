@@ -114,7 +114,7 @@ function commerce_stock_notifications_cron() {
   $awaiting_notifications = StockNotification::loadMultiple($awaiting_notification_ids);
   foreach ($awaiting_notifications as $awaiting_notification) {
 
-    $commerce_product_variation = ProductVariation::load($awaiting_notification->product_id->value);
+    $commerce_product_variation = ProductVariation::load($awaiting_notification->product_id->target_id);
     if(!$commerce_product_variation){
       continue;  // TODO: we probably should delete the notification ids instead of skipping when they do not exist anymore.
     }
