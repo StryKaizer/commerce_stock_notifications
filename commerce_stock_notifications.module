@@ -24,7 +24,17 @@ function commerce_stock_notifications_form_alter(&$form, &$form_state, $form_id)
     $stock_service_manager = \Drupal::service('commerce_stock.service_manager');
     $drupal_stock = $stock_service_manager->getStockLevel($commerce_product_variation);
 
+    $always_in_stock = FALSE;
     if ($drupal_stock < 1) {
+      $stock_service = $stock_service_manager->getService($commerce_product_variation);
+      $stock_checker = $stock_service->getStockChecker();
+
+      if ($stock_checker->getIsAlwaysInStock($commerce_product_variation)) {
+        $always_in_stock = TRUE;
+      }
+    }
+
+    if ($drupal_stock < 1 && !$always_in_stock) {
 
       $current_user = \Drupal::currentUser();
 
