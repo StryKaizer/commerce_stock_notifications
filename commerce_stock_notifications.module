@@ -24,7 +24,17 @@ function commerce_stock_notifications_form_alter(&$form, &$form_state, $form_id)
     $stock_service_manager = \Drupal::service('commerce_stock.service_manager');
     $drupal_stock = $stock_service_manager->getStockLevel($commerce_product_variation);
 
+    $always_in_stock = FALSE;
     if ($drupal_stock < 1) {
+      $stock_service = $stock_service_manager->getService($commerce_product_variation);
+      $stock_checker = $stock_service->getStockChecker();
+
+      if ($stock_checker->getIsAlwaysInStock($commerce_product_variation)) {
+        $always_in_stock = TRUE;
+      }
+    }
+
+    if ($drupal_stock < 1 && !$always_in_stock) {
 
       $current_user = \Drupal::currentUser();
 
@@ -104,13 +114,23 @@ function commerce_stock_notifications_cron() {
   $awaiting_notifications = StockNotification::loadMultiple($awaiting_notification_ids);
   foreach ($awaiting_notifications as $awaiting_notification) {
 
-    $commerce_product_variation = ProductVariation::load($awaiting_notification->product_id->value);
+    $commerce_product_variation = ProductVariation::load($awaiting_notification->product_id->target_id);
     if(!$commerce_product_variation){
       continue;  // TODO: we probably should delete the notification ids instead of skipping when they do not exist anymore.
     }
     $drupal_stock = $stock_service_manager->getStockLevel($commerce_product_variation);
 
-    if ($drupal_stock > 0) {
+    $always_in_stock = FALSE;
+    if ($drupal_stock < 1) {
+      $stock_service = $stock_service_manager->getService($commerce_product_variation);
+      $stock_checker = $stock_service->getStockChecker();
+
+      if ($stock_checker->getIsAlwaysInStock($commerce_product_variation)) {
+        $always_in_stock = TRUE;
+      }
+    }
+
+    if ($drupal_stock > 0 || $always_in_stock) {
       // Send email and flag as sent.
       $build = [
         '#theme' => 'commerce_stock_notifications_back_in_stock',
