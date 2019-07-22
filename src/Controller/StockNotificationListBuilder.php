@@ -35,7 +35,7 @@ class StockNotificationListBuilder extends EntityListBuilder {
     $row['id'] = $entity->id();
     $row['email'] = $entity->email->value;
     $row['langcode'] = $entity->langcode->value;
-    $row['product_id'] = $entity->product_id->value;
+    $row['product_id'] = $entity->product_id->target_id;
     $row['created'] = $entity->created->value;
     $row['sent_time'] = $entity->sent_time->value;
     return $row + parent::buildRow($entity);
